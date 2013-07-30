@@ -40,7 +40,6 @@ with Pretreatment,
 procedure TUI is
    package TIO renames Ada.Text_IO;
    package S_O renames String_Operations;
-   package Slice_Vectors renames S_O.Slice_Vectors;
 
    type Command_Type is
      (QUIT, RESTART, -- arity "zero" commands
@@ -163,20 +162,20 @@ begin
             TIO.Put_Line("Not a natural: """ & Argument & """");
       end Process_One;
 
-      procedure Process_OneToTwo(Command : in Arity_OneToTwo; Arguments : in Slice_Vectors.Vector)
+      procedure Process_OneToTwo(Command : in Arity_OneToTwo; Arguments : in S_O.Slice_Vector)
       is
          use type Ada.Directories.File_Kind;
          use type Ada.Containers.Count_Type;
       begin
-         if not (Arguments.Length in 1 .. 2) then
-            raise Invalid_Count with "Wrong number of arguments, expected: " & Arity_Of(Command) & " got:" & Ada.Containers.Count_Type'Image(Arguments.Length);
+         if not (S_O.Length(Arguments) in 1 .. 2) then
+            raise Invalid_Count with "Wrong number of arguments, expected: " & Arity_Of(Command) & " got:" & Natural'Image(S_O.Length(Arguments));
          end if;
 
          case Command is
          when WRITE =>
-            if Arguments.Length = 1 then
+            if S_O.Length(Arguments) = 1 then
                declare
-                  Format : constant Out_Format := Out_Format'Value(S_O.Element(Arguments, Arguments.First_Index));
+                  Format : constant Out_Format := Out_Format'Value(S_O.Nth(Arguments, 1));
                begin
                   case Format is
                   when PLAIN => Automata_IO.Write(TIO.Standard_Output, Automaton);
@@ -186,8 +185,8 @@ begin
                TIO.New_Line(TIO.Standard_Output);
             else
                declare
-                  Left   : constant Out_Format := Out_Format'Value(S_O.Element(Arguments, Arguments.First_Index));
-                  Right  : constant String     := S_O.Element(Arguments, Arguments.First_Index + 1);
+                  Left   : constant Out_Format := Out_Format'Value(S_O.Nth(Arguments, 1));
+                  Right  : constant String     := S_O.Nth(Arguments, 2);
                   output : TIO.File_Type;
                begin
                   if Ada.Directories.Exists(Right) then
@@ -212,17 +211,17 @@ begin
             TIO.Put_Line(Ada.Exceptions.Exception_Message(e));
       end Process_OneToTwo;
 
-      procedure Process_Two(Command : in Arity_Two; Arguments : in Slice_Vectors.Vector)
+      procedure Process_Two(Command : in Arity_Two; Arguments : in S_O.Slice_Vector)
       is
          use type Ada.Containers.Count_Type;
       begin
-         if Arguments.Length /= 2 then
-            raise Invalid_Count with "Wrong number of arguments, expected: " & Arity_Of(Command) & " got:" & Ada.Containers.Count_Type'Image(Arguments.Length);
+         if S_O.Length(Arguments) /= 2 then
+            raise Invalid_Count with "Wrong number of arguments, expected: " & Arity_Of(Command) & " got:" & Natural'Image(S_O.Length(Arguments));
          end if;
 
          declare
-            Left  : constant String := S_O.Element(Arguments, Arguments.First_Index);
-            Right : constant String := S_O.Element(Arguments, Arguments.First_Index + 1);
+            Left  : constant String := S_O.Nth(Arguments, 1);
+            Right : constant String := S_O.Nth(Arguments, 2);
          begin
             case Command is
             when READ =>
@@ -252,18 +251,18 @@ begin
             TIO.Put_Line(Ada.Exceptions.Exception_Message(e));
       end Process_Two;
 
-      procedure Process_ThreeToFour(Command : in Arity_ThreeToFour; Arguments : in Slice_Vectors.Vector)
+      procedure Process_ThreeToFour(Command : in Arity_ThreeToFour; Arguments : in S_O.Slice_Vector)
       is
          use type Ada.Containers.Count_Type;
       begin
-         if not(Arguments.Length in 3 .. 4) then
-            raise Invalid_Count with "Wrong number of arguments, expected: " & Arity_Of(Command) & " got:" & Ada.Containers.Count_Type'Image(Arguments.Length);
+         if not(S_O.Length(Arguments) in 3 .. 4) then
+            raise Invalid_Count with "Wrong number of arguments, expected: " & Arity_Of(Command) & " got:" & Natural'Image(S_O.Length(Arguments));
          end if;
 
          declare
-            Fst : constant String := S_O.Element(Arguments, Arguments.First_Index);
-            Snd : constant String := S_O.Element(Arguments, Arguments.First_Index + 1);
-            Trd : constant String := S_O.Element(Arguments, Arguments.First_Index + 2);
+            Fst : constant String := S_O.Nth(Arguments, 1);
+            Snd : constant String := S_O.Nth(Arguments, 2);
+            Trd : constant String := S_O.Nth(Arguments, 3);
          begin
             case Command is
             when APPLY =>
@@ -278,10 +277,15 @@ begin
                      TIO.Open(infile, TIO.In_File, Fst);
                      TIO.Create(outfile, TIO.Out_File, Snd);
 
-                     if Arguments.Length = 3 then
+                     if S_O.Length(Arguments) = 3 then
                         Automata_IO.Apply(infile, outfile, Automaton, Matching_Strategy'Value(Trd));
                      else
-                        Automata_IO.Apply(infile, outfile, Automaton, Matching_Strategy'Value(Trd), S_O.Element(Arguments, Arguments.First_Index + 3));
+                        Automata_IO.Apply
+                          (infile,
+                           outfile,
+                           Automaton,
+                           Matching_Strategy'Value(Trd),
+                           S_O.Nth(Arguments, 4));
                      end if;
 
                      TIO.Close(infile);

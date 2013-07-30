@@ -21,33 +21,72 @@
 --  along with this program.  If not, see <http://www.gnu.org/licenses/>.     --
 --------------------------------------------------------------------------------
 
-with Ada.Containers.Vectors,
-     Ada.Strings.Unbounded;
+private with Ada.Finalization;
 
 package String_Operations is
-   package Slice_Vectors is new Ada.Containers.Vectors
-     (Positive,
-      Ada.Strings.Unbounded.Unbounded_String,
-      Ada.Strings.Unbounded."=");
+   type Slice_Vector is private;
+   -- A Slice Vector is a given String "tokenised" according to a certain
+   -- pattern. In fact, it is a raw String with every sub-slices (an array
+   -- of "ranges") found for a given pattern.
 
-   function Element
-     (Target : in Slice_Vectors.Vector;
-      I      : in Positive)
-      return String;
+   Empty_Slice_Vector : constant Slice_Vector;
 
-   function Join
-     (Target  : in Slice_Vectors.Vector;
-      Pattern : in String)
-      return String;
+   -----------------------------------------------------------------------------
+   --                              Constructors                               --
+   -----------------------------------------------------------------------------
 
-   function Split
-     (Target  : in String;
-      Pattern : in String)
-      return Slice_Vectors.Vector;
+   function Split(Target  : in String; Pattern : in String) return Slice_Vector;
 
    function Sub_Slice
-     (Target : in Slice_Vectors.Vector;
+     (Target : in Slice_Vector;
       lo_nth : in Positive;
       hi_nth : in Positive)
-      return Slice_Vectors.Vector;
+      return Slice_Vector;
+
+   -----------------------------------------------------------------------------
+   --                                Observers                                --
+   -----------------------------------------------------------------------------
+
+   function Join(Target : in Slice_Vector; Pattern : in String) return String;
+
+   function Length(Target : Slice_Vector) return Natural;
+
+   function Nth(Target : in Slice_Vector; Position : in Positive) return String;
+
+   -----------------------------------------------------------------------------
+   --                                Modifiers                                --
+   -----------------------------------------------------------------------------
+
+   procedure Split
+     (Input   : in String;
+      Pattern : in String;
+      Target  : out Slice_Vector);
+
+private
+   type Slice is record
+      First : Positive;
+      Last  : Natural;
+   end record;
+
+   type Slice_Array is array (Positive range <>) of Slice;
+
+   type Slicing_Vector(Length, Number : Natural) is record
+      Raw    : String(1 .. Length);
+      Slices : Slice_Array(1 .. Number);
+   end record;
+
+   type Slicing_Vector_Access is access Slicing_Vector;
+
+   type Slice_Vector is new Ada.Finalization.Controlled with record
+      Element : Slicing_Vector_Access;
+   end record;
+
+   procedure Adjust(Target : in out Slice_Vector);
+
+   procedure Finalize(Target : in out Slice_Vector);
+
+   Empty_Slice_Vector : constant Slice_Vector :=
+     (Ada.Finalization.Controlled with
+      Element => null);
 end String_Operations;
+

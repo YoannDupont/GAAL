@@ -70,7 +70,7 @@ package Gaal.Automata is
    type Automaton_Object is access all Automaton'Class;
 
    -----------------------------------------------------------------------------
-   --                               Observators                               --
+   --                                Observers                                --
    -----------------------------------------------------------------------------
 
    function Image(A : in Automaton) return String;
